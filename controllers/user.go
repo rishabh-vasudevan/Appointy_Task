@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -56,6 +57,12 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, _ ht
 	json.NewDecoder(r.Body).Decode(&u) //decodes the body of the post request and stored it into u
 
 	u.UserId = bson.NewObjectId() //creates a new bson.ObjectId for User
+
+	/* Bcrypt is being used to add salt and hash to the password to make the password more secure
+	and so that it cannot be reverse engineered */
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(u.Password), 8)
+
+	u.Password = string(hashedPassword) // The password hash is converted to the string format to store it in the database
 
 	uc.Session.DB("appointy").C("users").Insert(u) //inserts the object into the users collection
 
