@@ -132,8 +132,9 @@ func (uc UserController) GetPostFromUser(w http.ResponseWriter, r *http.Request,
 
 	result := []models.Posts{}
 
-	// Finds all the posts which were made by a particular user
-	if err := uc.Session.DB("appointy").C("posts").Find(nil).Select(bson.M{"user": id}).All(&result); err != nil {
+	/* Finds all the posts which were made by a particular user
+	Pagination has also been used over here, the limit of retrieving posts has been set to 10  */
+	if err := uc.Session.DB("appointy").C("posts").Find(nil).Select(bson.M{"user": id}).Limit(10).All(&result); err != nil {
 		w.WriteHeader(404)
 		return
 	}
