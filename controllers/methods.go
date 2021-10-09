@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // structure that contains *mongo.Client in the variable Session
@@ -33,16 +33,16 @@ func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"] //extract the id from the get request
 
-	if !bson.IsObjectIdHex(id) {
+	oid, err := primitive.ObjectIDFromHex(id)
+
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound) //return if error is found
 	}
-
-	oid := bson.ObjectIdHex(id) //converting id into form of bson.ObjectId
 
 	u := models.Users{}
 
 	//fiding the entry with same user_id
-	if err := uc.Session.Database("appointy").Collection("users").FindOne(context.Background(), bson.M{"_id": oid}).Decode(&u); err != nil {
+	if err := uc.Session.Database("appointy").Collection("users").FindOne(context.Background(), primitive.M{"_id": oid}).Decode(&u); err != nil {
 		w.WriteHeader(404)
 		return
 	}
@@ -66,7 +66,7 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	json.NewDecoder(r.Body).Decode(&u) //decodes the body of the post request and stored it into u
 
-	u.UserId = bson.NewObjectId() //creates a new bson.ObjectId for User
+	u.UserId = primitive.NewObjectID() //creates a new bson.ObjectId for User
 
 	/* Bcrypt is being used to add salt and hash to the password to make the password more secure
 	and so that it cannot be reverse engineered */
@@ -96,8 +96,8 @@ func (uc UserController) CreatePost(w http.ResponseWriter, r *http.Request) {
 
 	json.NewDecoder(r.Body).Decode(&u) //decode the body of the post request, decode it and store it in u
 
-	u.PostId = bson.NewObjectId() // generate new bson Id
-	u.PostTime = time.Now()       // time.Time() returns the current date time, that is added to the PostTime field
+	u.PostId = primitive.NewObjectID() // generate new bson Id
+	u.PostTime = time.Now()            // time.Time() returns the current date time, that is added to the PostTime field
 
 	uc.Session.Database("appointy").Collection("posts").InsertOne(context.Background(), &u) //inserts data into the collection of posts in mongo db
 
@@ -118,16 +118,16 @@ func (uc UserController) GetPost(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"] //retrieve the id from the get request
 
-	if !bson.IsObjectIdHex(id) {
+	oid, err := primitive.ObjectIDFromHex(id) // converts id to the form of bson.ObjectId
+
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 	}
-
-	oid := bson.ObjectIdHex(id) // converts id to the form of bson.ObjectId
 
 	u := models.Posts{} //create empty object of type posts
 
 	// finds the post with the exact same post_id
-	if err := uc.Session.Database("appointy").Collection("posts").FindOne(context.Background(), bson.M{"_id": oid}).Decode(&u); err != nil {
+	if err := uc.Session.Database("appointy").Collection("posts").FindOne(context.Background(), primitive.M{"_id": oid}).Decode(&u); err != nil {
 		w.WriteHeader(404)
 		return
 	}
@@ -148,10 +148,6 @@ func (uc UserController) GetPostFromUser(w http.ResponseWriter, r *http.Request)
 	params := mux.Vars(r)
 	id := params["id"] //user id gets retrieved from the get request
 
-	if !bson.IsObjectIdHex(id) {
-		w.WriteHeader(http.StatusNotFound)
-	}
-
 	result := []models.Posts{}
 
 	findOptions := options.Find()
@@ -161,7 +157,7 @@ func (uc UserController) GetPostFromUser(w http.ResponseWriter, r *http.Request)
 	/* Finds all the posts which were made by a particular user
 	Pagination has also been used over here, the limit of retrieving posts has been set to 10  */
 
-	cursor, err := uc.Session.Database("appointy").Collection("posts").Find(context.Background(), bson.M{"user": id}, findOptions)
+	cursor, err := uc.Session.Database("appointy").Collection("posts").Find(context.Background(), primitive.M{"user": id}, findOptions)
 
 	if err != nil {
 		w.WriteHeader(404)

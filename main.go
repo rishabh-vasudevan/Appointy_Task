@@ -22,7 +22,6 @@ func main() {
 	client, _ := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 	uc := controllers.NewUserController(client)
 
-
 	// All the url definitions are defined over here
 	r.HandleFunc("/users/{id}", uc.GetUser).Methods("GET")
 	r.HandleFunc("/users", uc.CreateUser).Methods("POST")
