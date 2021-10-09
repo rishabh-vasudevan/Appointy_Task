@@ -2,6 +2,8 @@
 This api has been built according to the task assigned by Apponity. __All the tasks Provided have been completed__<br>
 [Link to the Document of the task](https://docs.google.com/document/d/1sFhVumoczf_PmaL_R__Rm9AHqaHsUWgj1x9YcQP6Is4/preview?pru=AAABfIQlr6s*R0w0zNFZ57-oXcTKNIVnVQ#)
 
+**Please excuse my mistakes in formatting or in the way program is structured if there are any, As this was the first time I have worked with the language GO**
+
 ## List of Task:
 
 * Api call to add new user
