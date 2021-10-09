@@ -1,5 +1,5 @@
 # Appointy_Task
-This api has been built according to the task assigned by Apponity. All the tasks Provided have been completed<br>
+This api has been built according to the task assigned by Apponity. __All the tasks Provided have been completed__<br>
 [Link to the Document of the task](https://docs.google.com/document/d/1sFhVumoczf_PmaL_R__Rm9AHqaHsUWgj1x9YcQP6Is4/preview?pru=AAABfIQlr6s*R0w0zNFZ57-oXcTKNIVnVQ#)
 
 ## List of Task:
@@ -55,5 +55,5 @@ This is the code used for it
 ![image](https://user-images.githubusercontent.com/62301939/136636108-dc608076-853d-41aa-b990-47e3c1d38c71.png)
 
 **Output of Retrieving all the posts made by a particular user based on the user_id :**
-![image](https://user-images.githubusercontent.com/62301939/136638753-01e5f914-97a5-4e2d-81fa-158897b472f0.png)<br>
-**Because of Pagination at max 10 posts will be retrieved this will improve the time for API call**
+![image](https://user-images.githubusercontent.com/62301939/136663538-b90ebbbb-7a74-41b3-8a2d-8fa2772b1979.png)<br>
+**Because of Pagination a maximum 10 posts can be retrieved this will improve the time for API call**
