@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -20,6 +21,8 @@ type UserController struct {
 func NewUserController(s *mgo.Session) *UserController {
 	return &UserController{s}
 }
+
+var lock sync.Mutex
 
 // This is the function that retrievs the data once the user Id has been provided
 func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -52,6 +55,8 @@ func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httpr
 
 // This function is there to add the user into the Users collection in mongodb
 func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	lock.Lock()
 	u := models.Users{}
 
 	json.NewDecoder(r.Body).Decode(&u) //decodes the body of the post request and stored it into u
@@ -80,6 +85,7 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, _ ht
 // This function is there to create new entries into the posts collection in mongodb
 func (uc UserController) CreatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
+	lock.Lock()
 	u := models.Posts{}
 
 	json.NewDecoder(r.Body).Decode(&u) //decode the body of the post request, decode it and store it in u
