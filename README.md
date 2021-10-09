@@ -15,7 +15,7 @@ This api has been built according to the task assigned by Apponity. __All the ta
 * Password should be stored safely, so that it cannot be reengineered
 * The API should be **thread safe**
 * There must be **pagination** at list end points
-* There should be **unit test**
+* There should be **unit tests for all functions**
 
 ## Methods
 ### Security of Password
