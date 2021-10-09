@@ -18,13 +18,10 @@ func main() {
 
 	// Setup the connection with MongoDB
 	r := mux.NewRouter()
-	ctx, err := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	client, _ := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 	uc := controllers.NewUserController(client)
 
-	if err != nil {
-		fmt.Println("Could not connect to the database")
-	}
 
 	// All the url definitions are defined over here
 	r.HandleFunc("/users/{id}", uc.GetUser).Methods("GET")
