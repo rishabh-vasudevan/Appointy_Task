@@ -11,7 +11,7 @@ This api has been built according to the task assigned by Apponity. All the task
 * Api call to retrieve all posts made by a particular user
 * The Api should be made using GO
 * MongoDB should be used for the database
-* Only particular libraries and packages were allowed (Some extra packages were imported for things like hashing and saltin the password)
+* Only particular libraries and packages were allowed
 * Password should be stored safely, so that it cannot be reengineered
 * The API should be **thread safe**
 * There must be **pagination** at list end points
