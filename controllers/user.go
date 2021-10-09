@@ -2,31 +2,36 @@ package controllers
 
 import (
 	"appointy/models"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
+// structure that contains *mongo.Client in the variable Session
 type UserController struct {
-	Session *mgo.Session
+	Session *mongo.Client
 }
 
-func NewUserController(s *mgo.Session) *UserController {
+func NewUserController(s *mongo.Client) *UserController {
 	return &UserController{s}
 }
 
 var lock sync.Mutex
 
 // This is the function that retrievs the data once the user Id has been provided
-func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	id := p.ByName("id") //extract the id from the get request
+func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request) {
+
+	params := mux.Vars(r)
+	id := params["id"] //extract the id from the get request
 
 	if !bson.IsObjectIdHex(id) {
 		w.WriteHeader(http.StatusNotFound) //return if error is found
@@ -37,7 +42,7 @@ func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httpr
 	u := models.Users{}
 
 	//fiding the entry with same user_id
-	if err := uc.Session.DB("appointy").C("users").FindId(oid).One(&u); err != nil {
+	if err := uc.Session.Database("appointy").Collection("users").FindOne(context.Background(), bson.M{"_id": oid}).Decode(&u); err != nil {
 		w.WriteHeader(404)
 		return
 	}
@@ -54,7 +59,7 @@ func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httpr
 }
 
 // This function is there to add the user into the Users collection in mongodb
-func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	lock.Lock()
 	u := models.Users{}
@@ -69,7 +74,7 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, _ ht
 
 	u.Password = string(hashedPassword) // The password hash is converted to the string format to store it in the database
 
-	uc.Session.DB("appointy").C("users").Insert(u) //inserts the object into the users collection
+	uc.Session.Database("appointy").Collection("users").InsertOne(context.Background(), &u) //inserts the object into the users collection
 
 	uj, err := json.Marshal(u) //converts the object back into json
 
@@ -80,10 +85,11 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, _ ht
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated) //returns the respose of created through http
 	fmt.Fprintf(w, "%s\n", uj)        //returns the json file
+	lock.Unlock()
 }
 
 // This function is there to create new entries into the posts collection in mongodb
-func (uc UserController) CreatePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (uc UserController) CreatePost(w http.ResponseWriter, r *http.Request) {
 
 	lock.Lock()
 	u := models.Posts{}
@@ -93,7 +99,7 @@ func (uc UserController) CreatePost(w http.ResponseWriter, r *http.Request, _ ht
 	u.PostId = bson.NewObjectId() // generate new bson Id
 	u.PostTime = time.Now()       // time.Time() returns the current date time, that is added to the PostTime field
 
-	uc.Session.DB("appointy").C("posts").Insert(u) //inserts data into the collection of posts in mongo db
+	uc.Session.Database("appointy").Collection("posts").InsertOne(context.Background(), &u) //inserts data into the collection of posts in mongo db
 
 	uj, err := json.Marshal(u) // converts it back into json file
 
@@ -104,11 +110,13 @@ func (uc UserController) CreatePost(w http.ResponseWriter, r *http.Request, _ ht
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated) // sends successful creation message through http
 	fmt.Fprintf(w, "%s\n", uj)        // sends the object back in the form of json
+	lock.Unlock()
 }
 
 // This function is there to retrieve posts based on the post id
-func (uc UserController) GetPost(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	id := p.ByName("id") //retrieve the id from the get request
+func (uc UserController) GetPost(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"] //retrieve the id from the get request
 
 	if !bson.IsObjectIdHex(id) {
 		w.WriteHeader(http.StatusNotFound)
@@ -119,7 +127,7 @@ func (uc UserController) GetPost(w http.ResponseWriter, r *http.Request, p httpr
 	u := models.Posts{} //create empty object of type posts
 
 	// finds the post with the exact same post_id
-	if err := uc.Session.DB("appointy").C("posts").FindId(oid).One(&u); err != nil {
+	if err := uc.Session.Database("appointy").Collection("posts").FindOne(context.Background(), bson.M{"_id": oid}).Decode(&u); err != nil {
 		w.WriteHeader(404)
 		return
 	}
@@ -136,8 +144,9 @@ func (uc UserController) GetPost(w http.ResponseWriter, r *http.Request, p httpr
 }
 
 // This funciton is there to retrieve all the posts made by a particular user
-func (uc UserController) GetPostFromUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	id := p.ByName("user_id") //user id gets retrieved from the get request
+func (uc UserController) GetPostFromUser(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"] //user id gets retrieved from the get request
 
 	if !bson.IsObjectIdHex(id) {
 		w.WriteHeader(http.StatusNotFound)
@@ -145,12 +154,25 @@ func (uc UserController) GetPostFromUser(w http.ResponseWriter, r *http.Request,
 
 	result := []models.Posts{}
 
+	findOptions := options.Find()
+	findOptions.SetLimit(5)
+	findOptions.SetSkip(0)
+
 	/* Finds all the posts which were made by a particular user
 	Pagination has also been used over here, the limit of retrieving posts has been set to 10  */
-	if err := uc.Session.DB("appointy").C("posts").Find(nil).Select(bson.M{"user": id}).Limit(10).All(&result); err != nil {
+
+	cursor, err := uc.Session.Database("appointy").Collection("posts").Find(context.Background(), bson.M{"user": id}, findOptions)
+
+	if err != nil {
 		w.WriteHeader(404)
 		return
 	}
+
+	if err := cursor.All(context.Background(), &result); err != nil {
+		fmt.Fprintf(w, "%s\n", err)
+	}
+
+	defer cursor.Close(context.Background())
 
 	uj, err := json.Marshal(result) //converts the data into the format of json
 	if err != nil {

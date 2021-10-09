@@ -6,33 +6,34 @@ import (
 
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
-	"gopkg.in/mgo.v2"
+	"context"
+	"time"
+
+	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func main() {
 
-	r := httprouter.New()
-	uc := controllers.NewUserController(getSession())
+	// Setup the connection with MongoDB
+	r := mux.NewRouter()
+	ctx, err := context.WithTimeout(context.Background(), 10*time.Second)
+	client, _ := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	uc := controllers.NewUserController(client)
 
-	// All the url definitions are defined over here
-	r.GET("/users/:id", uc.GetUser)
-	r.POST("/users", uc.CreateUser)
-	r.POST("/posts", uc.CreatePost)
-	r.GET("/posts/:id", uc.GetPost)
-	r.GET("/posts_user/:user_id", uc.GetPostFromUser) // In the task it was written to keep this url as /post/user/:id but that gives an error as /posts/:id is already being used
-
-	fmt.Print("The api is being served at port:9000\n")
-
-	http.ListenAndServe("localhost:9000", r) // start listner listens on port 9000
-}
-
-//function to initiate the mongodb connection
-func getSession() *mgo.Session {
-	s, err := mgo.Dial("mongodb://localhost:27017")
 	if err != nil {
-		panic(err)
+		fmt.Println("Could not connect to the database")
 	}
 
-	return s
+	// All the url definitions are defined over here
+	r.HandleFunc("/users/{id}", uc.GetUser).Methods("GET")
+	r.HandleFunc("/users", uc.CreateUser).Methods("POST")
+	r.HandleFunc("/posts", uc.CreatePost).Methods("POST")
+	r.HandleFunc("/posts/{id}", uc.GetPost).Methods("GET")
+	r.HandleFunc("/posts/user/{id}", uc.GetPostFromUser).Methods("GET")
+
+	fmt.Print("The api is being served at port:9001\n")
+
+	http.ListenAndServe("localhost:9001", r) // start listner listens on port 9000
 }
